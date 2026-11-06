@@ -14,16 +14,38 @@ const allCriteria = () => project.standards.flatMap(s=>s.criteria);
 function toast(message){ $('#toast').textContent=message; $('#toast').hidden=false; setTimeout(()=>$('#toast').hidden=true,9000); }
 function badge(value){return `<span class="badge ${value==='Complete'?'complete':value==='Ready for Review'?'ready':value==='In Progress'||value==='Partially Collected'?'progress':''}">${esc(value)}</span>`;}
 function options(values,current,blank){return (blank?`<option value="">${blank}</option>`:'')+values.map(v=>`<option value="${esc(v)}" ${String(v)===String(current)?'selected':''}>${esc(v)}</option>`).join('');}
+let lastSaveError='';
+function mergeWorkspace(base,local,remote,path='workspace'){
+ const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ if(equal(local,base))return structuredClone(remote);
+ if(equal(remote,base)||equal(local,remote))return structuredClone(local);
+ if(Array.isArray(base)&&Array.isArray(local)&&Array.isArray(remote)){
+  const keyed=base.every(x=>x&&typeof x==='object'&&typeof x.id==='string');
+  if(keyed&&local.every(x=>x&&x.id)&&remote.every(x=>x&&x.id)&&equal(base.map(x=>x.id),local.map(x=>x.id))&&equal(base.map(x=>x.id),remote.map(x=>x.id)))return base.map((x,i)=>mergeWorkspace(x,local[i],remote[i],path+' / '+x.id));
+ }else if(base&&local&&remote&&typeof base==='object'&&typeof local==='object'&&typeof remote==='object'&&!Array.isArray(base)&&!Array.isArray(local)&&!Array.isArray(remote)){
+  const out={};for(const key of new Set([...Object.keys(base),...Object.keys(local),...Object.keys(remote)])){
+   const value=mergeWorkspace(base[key],local[key],remote[key],path+' / '+key);if(value!==undefined)out[key]=value;
+  }return out;
+ }
+ throw Error('This item was also changed in another tab ('+path+'). Your edits are still in this form. Copy them before reloading to review the latest version.');
+}
 async function commit(next){
- if(busy) return false;
- if(conflicted){toast('Download your backup, then reload to get the latest shared version.');return false;}
- busy=true; $('#save-state').textContent='Saving…';
+ if(busy)return false;
+ busy=true;lastSaveError='';conflicted=false;$('#save-state').textContent='Saving…';
  try{
-  const response=await trackerFetch(projectApi,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision,project:next})});
-  const result=await response.json();
-  if(!response.ok){if(response.status===409)conflicted=true;throw Error(result.error||'Unable to save');}
-  project=next;revision=result.revision;$('#save-state').textContent='✓ All changes saved';render();return true;
- }catch(e){$('#save-state').textContent=conflicted?'Conflict · reload required':'Save failed · please retry';toast(e.message);return false;}
+  let saveRevision=revision;
+  for(let attempt=0;attempt<2;attempt++){
+   const response=await trackerFetch(projectApi,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:saveRevision,project:next})});
+   const result=await response.json();
+   if(response.status===409&&attempt===0){
+    const latestResponse=await trackerFetch(projectApi);const latest=await latestResponse.json();
+    if(!latestResponse.ok)throw Error(latest.error||'Unable to load the latest workspace.');
+    next=mergeWorkspace(project,next,latest.project);saveRevision=latest.revision;continue;
+   }
+   if(!response.ok)throw Error(response.status===409?'The workspace changed again while saving. Your edits are still here; please try saving again.':result.error||'Unable to save');
+   project=next;revision=result.revision;$('#save-state').textContent='✓ All changes saved';render();return true;
+  }
+ }catch(e){lastSaveError=e.message;$('#save-state').textContent='Changes not saved';toast(lastSaveError);return false;}
  finally{busy=false;}
 }
 function render(){
@@ -154,7 +176,7 @@ $('#editor').onsubmit=async e=>{
  if(kind==='criterion'){if(item)Object.assign(s.criteria.find(c=>c.id===id),values);else s.criteria.push({id:uid(),year:project.startYear,...values});}
  if(kind==='review')Object.assign(next.reviews.find(r=>r.id===id),values);
  const btn=e.target.querySelector('[type=submit]');btn.disabled=true;
- if(await commit(next))$('#modal').close();else $('#form-error').textContent='Changes were not saved. Check the error message and retry. Your form is still here.';
+ if(await commit(next))$('#modal').close();else $('#form-error').textContent=lastSaveError||'Changes were not saved. Your form is still here.';
  btn.disabled=false;
 };
 $('#delete-evidence').onclick=async()=>{
@@ -272,8 +294,23 @@ async function renderEvidence(){
  try{
   const response=await trackerFetch('/api/cycles/'+activeCycle+'/evidence');const result=await response.json();if(!response.ok)throw Error(result.error);
   if(view!=='evidence'||request!==evidenceRequest)return;
-  $('#evidence-list').innerHTML=result.documents.map(d=>`<article class="evidence-card"><h3><a href="${esc(d.url)}">${esc(d.title)}</a></h3><p>${d.versions.length} version(s) · Latest: ${esc(d.versions[0].filename)} · ${(d.versions[0].size/1024).toFixed(1)} KB</p><label>Evidence link<input readonly value="${esc(evidenceHref(d.url))}" aria-label="Evidence link for ${esc(d.title)}"></label><div class="record-actions"><a href="${esc(d.url)}">Open document ↗</a><button type="button" data-copy-evidence="${esc(d.url)}">Copy link</button></div></article>`).join('')||'<div class="empty">Your evidence library is ready. Upload a document to begin.</div>';
-  $('#evidence-list').onclick=async event=>{const button=event.target.closest('[data-copy-evidence]');if(!button)return;try{await navigator.clipboard.writeText(evidenceHref(button.dataset.copyEvidence));toast('Evidence link copied.');}catch(error){const input=button.closest('.evidence-card').querySelector('input');input.focus();input.select();toast('Select and copy the evidence link.');}};
+  $('#evidence-list').innerHTML=result.documents.map(d=>`<article class="evidence-card"><h3><a href="${esc(d.url)}">${esc(d.title)}</a></h3><p>${d.versions.length} version(s) · Latest: ${esc(d.versions[0].filename)} · ${(d.versions[0].size/1024).toFixed(1)} KB</p><label>Evidence link<input readonly value="${esc(evidenceHref(d.url))}" aria-label="Evidence link for ${esc(d.title)}"></label><div class="record-actions"><a href="${esc(d.url)}">Open document ↗</a><button type="button" data-copy-evidence="${esc(d.url)}">Copy link</button>${trackerUser.role==='admin'?`<button type="button" class="danger workspace-delete" data-admin data-delete-evidence="${esc(d.id)}" aria-label="Delete evidence: ${esc(d.title)}" title="Delete evidence"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button>`:''}</div></article>`).join('')||'<div class="empty">Your evidence library is ready. Upload a document to begin.</div>';
+  $('#evidence-list').onclick=async event=>{
+   const remove=event.target.closest('[data-delete-evidence]');
+   if(remove){
+    if(trackerUser.role!=='admin'||remove.disabled)return;
+    const doc=result.documents.find(d=>d.id===remove.dataset.deleteEvidence);
+    if(!doc||!confirm('Delete “'+doc.title+'”? You can restore it from Archives. Uploaded files will remain saved.'))return;
+    remove.disabled=true;
+    try{
+     const response=await trackerFetch('/api/evidence/'+doc.id+'/archive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:doc.revision})});
+     const saved=await response.json();if(!response.ok)throw Error(saved.error||'Unable to delete evidence. Please try again.');
+     toast('Evidence moved to Archives.');
+     if(view==='evidence'&&request===evidenceRequest)await renderEvidence();
+    }catch(error){remove.disabled=false;toast(error.message);}
+    return;
+   }
+   const button=event.target.closest('[data-copy-evidence]');if(!button)return;try{await navigator.clipboard.writeText(evidenceHref(button.dataset.copyEvidence));toast('Evidence link copied.');}catch(error){const input=button.closest('.evidence-card').querySelector('input');input.focus();input.select();toast('Select and copy the evidence link.');}};
  }catch(error){if(view==='evidence'&&request===evidenceRequest)$('#evidence-list').textContent=error.message;}
 }
 

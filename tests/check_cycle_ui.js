@@ -65,5 +65,8 @@ setImmediate(async()=>{
  const overall=vm.runInContext("progressOptions('bar','overall')",context);
  assert.equal(overall.series[0].data[0],75);
  assert.equal(overall.xAxis.data.length,3);
+ const merged=vm.runInContext("mergeWorkspace({name:'Original',owners:['Old']},{name:'New',owners:['Old']},{name:'Original',owners:[]})",context);
+ assert.equal(merged.name,'New');assert.equal(merged.owners.length,0);
+ assert.throws(()=>vm.runInContext("mergeWorkspace({name:'Original'},{name:'Mine'},{name:'Theirs'})",context),/also changed/);
  console.log('Cycle scope, reviews, evidence links, and custom workspace rendering passed.');
 });
