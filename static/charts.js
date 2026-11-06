@@ -1,0 +1,81 @@
+/* Local, declarative chart editor; Apache ECharts is bundled, never fetched at runtime. */
+window.ChartEditor=(()=>{
+ const types={column:'Column',bar:'Bar (horizontal)',stackedColumn:'Stacked column',stackedBar:'Stacked bar',line:'Line',area:'Area',stackedArea:'Stacked area',pie:'Pie',doughnut:'Doughnut',scatter:'Scatter (XY)',bubble:'Bubble',radar:'Radar',histogram:'Histogram',boxplot:'Box and whisker',stock:'Stock (candlestick)',waterfall:'Waterfall',funnel:'Funnel',treemap:'Treemap',sunburst:'Sunburst',heatmap:'Heatmap',combo:'Combo (column + line)',gauge:'Gauge'};
+ const palette=['#3478dc','#29a99c','#e9a23b','#8b6cca','#dc6b83','#367b8c'];
+ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ let chart,observer;
+ function dispose(){observer?.disconnect();chart?.dispose();chart=null;}
+ function defaults(name){return {type:'column',title:name,subtitle:'',xTitle:'',yTitle:'',font:'Times New Roman',fontSize:14,legend:true,legendPosition:'bottom',grid:true,labels:false,smooth:false,background:'#ffffff',textColor:'#18324e',colors:[...palette],headers:['Category','Series 1','Series 2'],rows:[['Category A',10,15],['Category B',20,12],['Category C',15,25]]};}
+ function option(c){
+ const cats=c.rows.map(r=>r[0]), series=c.headers.slice(1).map((name,i)=>({name,data:c.rows.map(r=>r[i+1]),type:'bar'}));
+ const label={show:c.labels,color:c.textColor,fontSize:c.fontSize};
+ const o={animation:false,backgroundColor:c.background,color:c.colors,textStyle:{fontFamily:c.font,fontSize:c.fontSize,color:c.textColor},title:{text:c.title,subtext:c.subtitle,left:'center',top:12,textStyle:{fontFamily:c.font,color:c.textColor,fontSize:c.fontSize+6},subtextStyle:{color:c.textColor,fontSize:c.fontSize}},tooltip:{trigger:'item',renderMode:'richText'},legend:{show:c.legend,[c.legendPosition]:c.legendPosition==='top'?78:8,textStyle:{color:c.textColor,fontSize:c.fontSize}},grid:{top:c.legendPosition==='top'?125:95,bottom:90,left:85,right:45,containLabel:true},xAxis:{type:'category',data:cats,name:c.xTitle,nameLocation:'middle',nameGap:35,axisLabel:{color:c.textColor},nameTextStyle:{color:c.textColor}},yAxis:{type:'value',name:c.yTitle,axisLabel:{color:c.textColor},splitLine:{show:c.grid},nameTextStyle:{color:c.textColor}},series:series.map(s=>({...s,label}))};
+ const polar=()=>{delete o.xAxis;delete o.yAxis;};
+ if(['bar','stackedBar'].includes(c.type)){[o.xAxis,o.yAxis]=[o.yAxis,o.xAxis];o.xAxis.name=c.xTitle;o.yAxis.name=c.yTitle;}
+ if(['line','area','stackedArea','combo'].includes(c.type))o.series.forEach((s,i)=>{s.type=c.type==='combo'&&i===0?'bar':'line';s.smooth=c.smooth;if(c.type.includes('Area')||c.type==='area')s.areaStyle={};});
+ if(['stackedColumn','stackedBar','stackedArea'].includes(c.type))o.series.forEach(s=>s.stack='total');
+ if(['pie','doughnut','funnel','treemap','sunburst','gauge'].includes(c.type)){
+ polar();const data=c.rows.map(r=>({name:r[0],value:r[1]}));
+ if(data.some(d=>d.value<0))throw Error('This chart type needs nonnegative values in the first series.');
+ if(c.type==='gauge')o.series=[{type:'gauge',min:0,max:Math.max(100,...data.map(d=>d.value)),detail:{formatter:'{value}',color:c.textColor},data:[data[0]],title:{color:c.textColor}}];
+ else if(c.type==='sunburst')o.series=[{type:'sunburst',radius:['0%','65%'],center:['50%','55%'],label:{...label,show:true},data:c.rows.map(r=>({name:r[0],children:c.headers.slice(1).map((n,i)=>({name:n,value:Math.max(0,r[i+1])}))}))}];
+ else if(c.type==='treemap')o.series=[{type:'treemap',top:105,bottom:65,roam:false,nodeClick:false,breadcrumb:{show:false},label:{...label,show:true},data}];
+ else if(c.type==='funnel')o.series=[{type:'funnel',top:110,bottom:75,label:{...label,show:true},data}];
+ else o.series=[{type:'pie',radius:c.type==='doughnut'?['35%','65%']:'65%',center:['50%','55%'],label:{...label,formatter:'{b}: {c} ({d}%)'},data}];
+ }
+ if(['scatter','bubble'].includes(c.type)){
+ if(c.headers.length<(c.type==='bubble'?4:3))throw Error('Use numeric series for X, Y'+(c.type==='bubble'?', and bubble size.':'.'));
+ o.xAxis={...o.xAxis,type:'value',data:undefined};o.series=[{type:'scatter',name:c.headers[2],label:{...label,formatter:p=>cats[p.dataIndex]},data:c.rows.map(r=>r.slice(1)),symbolSize:c.type==='bubble'?v=>Math.max(5,Math.min(65,Math.sqrt(Math.abs(v[2]))*5)):12}];
+ }
+ if(c.type==='radar'){
+ polar();const max=Math.max(1,...c.rows.flatMap(r=>r.slice(1)));o.radar={center:['50%','56%'],radius:'60%',indicator:cats.map(name=>({name,max})),axisName:{color:c.textColor}};o.series=[{type:'radar',label,data:series.map(s=>({name:s.name,value:s.data}))}];
+ }
+ if(c.type==='histogram'){
+ const values=series[0].data,min=Math.min(...values),max=Math.max(...values),count=Math.min(12,Math.max(1,Math.ceil(Math.sqrt(values.length)))),width=(max-min||1)/count,bins=Array(count).fill(0);
+ values.forEach(v=>bins[Math.min(count-1,Math.floor((v-min)/width))]++);o.xAxis.data=bins.map((_,i)=>(min+i*width).toFixed(1)+'–'+(min+(i+1)*width).toFixed(1));o.series=[{name:'Frequency',type:'bar',barCategoryGap:0,label,data:bins}];
+ }
+ if(c.type==='boxplot'){
+ const q=(a,p)=>{const x=(a.length-1)*p,i=Math.floor(x);return a[i]+(a[Math.min(i+1,a.length-1)]-a[i])*(x-i);};
+ o.xAxis.data=series.map(s=>s.name);o.series=[{type:'boxplot',data:series.map(s=>{const a=[...s.data].sort((a,b)=>a-b);return[a[0],q(a,.25),q(a,.5),q(a,.75),a[a.length-1]];})}];
+ }
+ if(c.type==='stock'){
+ if(c.headers.length<5)throw Error('Stock charts require four numeric columns: Open, Close, Low, High.');
+ if(c.rows.some(r=>r[3]>Math.min(r[1],r[2])||r[4]<Math.max(r[1],r[2])||r[3]>r[4]))throw Error('Each Low must be below Open/Close, and High must be above them.');
+ o.series=[{type:'candlestick',name:'Price',data:c.rows.map(r=>r.slice(1,5)),itemStyle:{color:c.colors[0],color0:c.colors[1]||c.colors[0],borderColor:c.colors[0],borderColor0:c.colors[1]||c.colors[0]}}];
+ }
+ if(c.type==='waterfall'){
+ let total=0;const segments=c.rows.map(r=>{const start=total;total+=r[1];return[start,total];});
+ o.series=[{name:series[0].name,type:'custom',data:segments.map((v,i)=>[i,...v]),encode:{x:0,y:[1,2]},renderItem:(params,api)=>{const a=api.coord([api.value(0),api.value(1)]),b=api.coord([api.value(0),api.value(2)]),w=api.size([1,0])[0]*.6;return {type:'group',children:[{type:'rect',shape:{x:a[0]-w/2,y:Math.min(a[1],b[1]),width:w,height:Math.max(1,Math.abs(a[1]-b[1]))},style:{fill:c.colors[api.value(2)>=api.value(1)?0:1]||c.colors[0]}},...(c.labels?[{type:'text',style:{x:a[0],y:Math.min(a[1],b[1])-8,text:String(api.value(2)-api.value(1)),fill:c.textColor,textAlign:'center'}}]:[])]};}}];
+ }
+ if(c.type==='heatmap'){
+ o.yAxis={type:'category',data:series.map(s=>s.name),name:c.yTitle,axisLabel:{color:c.textColor}};o.visualMap={min:Math.min(...series.flatMap(s=>s.data)),max:Math.max(...series.flatMap(s=>s.data)),orient:'horizontal',bottom:5,left:'center',inRange:{color:[c.background,...c.colors.slice(0,2)]},textStyle:{color:c.textColor}};o.legend.show=false;o.series=[{type:'heatmap',label,data:c.rows.flatMap((r,x)=>r.slice(1).map((v,y)=>[x,y,v]))}];
+ }
+ return o;
+ }
+ const help={scatter:'Use the first two numeric columns as X and Y; row names identify points.',bubble:'Use three numeric columns: X, Y, and Size. Bubble area follows the absolute size value.',stock:'Use four numeric columns in order: Open, Close, Low, High. Rows are dates or periods.',boxplot:'Each numeric column is a sample group. Whiskers show minimum and maximum; the box shows quartiles and median.',histogram:'Enter observations in the first numeric column. Frequency bins are calculated automatically.',waterfall:'The first numeric column contains changes; bars show the running total.',sunburst:'Row names form the inner ring; series names and values form each row’s outer ring.',pie:'Uses the first numeric column. Values must be nonnegative.',doughnut:'Uses the first numeric column. Values must be nonnegative.',gauge:'Uses the first value of the first numeric column.',treemap:'Uses row names and the first numeric column as sized rectangles.',funnel:'Uses the first numeric column, sorted largest to smallest.',combo:'The first series is columns; remaining series are lines on the same scale.'};
+ function mount(root,task,save){
+ dispose();let c=structuredClone(task.chart||defaults(task.name)),dirty=false;
+ root.innerHTML=`<div class="toolbar"><div><h2>Chart builder</h2><p>Choose a chart, enter data, and customize its appearance.</p></div><button id="chart-save" class="primary">Save chart</button></div><p id="chart-status" role="status">${task.chart?'Saved chart loaded.':'Sample data — replace it with your own, then save.'}</p><div class="chart-layout"><form id="chart-settings" class="chart-settings"><label>Chart type<select name="type">${Object.entries(types).map(([v,n])=>`<option value="${v}">${n}</option>`).join('')}</select></label>${['title','subtitle','xTitle','yTitle'].map(k=>`<label>${({title:'Chart title',subtitle:'Subtitle',xTitle:'X-axis title',yTitle:'Y-axis title'})[k]}<input name="${k}" maxlength="200"></label>`).join('')}<label>Font<select name="font">${['Times New Roman','Arial','Georgia','Verdana'].map(n=>`<option>${n}</option>`).join('')}</select></label><label>Text size<input name="fontSize" type="number" min="10" max="32"></label><label>Legend position<select name="legendPosition"><option value="bottom">Bottom</option><option value="top">Top</option></select></label>${['legend','grid','labels','smooth'].map(k=>`<label class="chart-check"><input name="${k}" type="checkbox">${({legend:'Show legend',grid:'Show grid lines',labels:'Show data labels',smooth:'Smooth lines'})[k]}</label>`).join('')}<label>Background<input type="color" name="background"></label><label>Text color<input type="color" name="textColor"></label><fieldset><legend>Series / slice colors</legend><div id="chart-colors"></div><button type="button" id="chart-add-color">+ Color</button></fieldset></form><div class="chart-main"><div id="chart-preview" role="img" aria-label="Chart preview"></div><div class="record-actions"><button id="chart-png">Download PNG</button><button id="chart-svg">Download SVG</button><button id="chart-csv">Download data CSV</button></div><p id="chart-help"></p><h3>Chart data</h3><p>Edit column headings, row labels, and numeric values. Up to 200 rows and 12 series.</p><div class="chart-table-wrap"><table id="chart-table"></table></div><div class="record-actions"><button id="chart-add-row">+ Row</button><button id="chart-add-series">+ Series</button></div><details><summary>Paste spreadsheet data</summary><p>Paste tab-separated cells, including a header row. The first column contains labels; the rest contain numbers. Applying replaces the table.</p><textarea id="chart-paste" aria-label="Spreadsheet data" placeholder="Category&#9;Series 1&#10;A&#9;10"></textarea><button id="chart-apply">Apply data</button></details></div></div>`;
+ const $=sel=>root.querySelector(sel),form=$('#chart-settings'),status=$('#chart-status');
+ Object.entries(c).forEach(([k,v])=>{const el=form.elements[k];if(el)el.type==='checkbox'?el.checked=v:el.value=v;});
+ chart=echarts.init($('#chart-preview'),null,{renderer:'canvas'});observer=new ResizeObserver(()=>chart?.resize());observer.observe($('#chart-preview'));
+ function draw(){try{chart.setOption(option(c),true);$('#chart-help').textContent=help[c.type]||'Each numeric column is a series. Row names supply category labels.';status.textContent=dirty?'Unsaved changes. Save chart when ready.':(task.chart?'Saved chart loaded.':'Sample data — replace it with your own, then save.');return true;}catch(e){status.textContent=e.message;return false;}}
+ function changed(){dirty=true;draw();}
+ function colors(){ $('#chart-colors').innerHTML=c.colors.map((v,i)=>`<label>Color ${i+1}<input type="color" data-color="${i}" value="${esc(v)}"></label>`).join(''); }
+ function table(){ $('#chart-table').innerHTML=`<thead><tr>${c.headers.map((h,i)=>`<th><input aria-label="Column ${i+1} name" data-header="${i}" maxlength="100" value="${esc(h)}">${i>0&&c.headers.length>2?`<button data-remove-series="${i}" aria-label="Remove series ${esc(h)}">×</button>`:''}</th>`).join('')}<th></th></tr></thead><tbody>${c.rows.map((r,i)=>`<tr>${r.map((v,j)=>`<td><input aria-label="Row ${i+1}, ${esc(c.headers[j])}" data-row="${i}" data-col="${j}" ${j?'type="number" step="any" min="-1000000000000" max="1000000000000"':'maxlength="100"'} value="${esc(v)}"></td>`).join('')}<td><button data-remove-row="${i}" aria-label="Remove row ${i+1}" ${c.rows.length===1?'disabled':''}>×</button></td></tr>`).join('')}</tbody>`; }
+ form.onsubmit=e=>e.preventDefault();form.oninput=e=>{const el=e.target;if(el.dataset.color!==undefined)c.colors[+el.dataset.color]=el.value;else if(el.name){if(!el.checkValidity())return;c[el.name]=el.type==='checkbox'?el.checked:el.name==='fontSize'?Number(el.value):el.value;}changed();};
+ $('#chart-add-color').onclick=()=>{if(c.colors.length<50){c.colors.push(palette[c.colors.length%palette.length]);colors();changed();}};
+ $('#chart-table').oninput=e=>{const el=e.target;if(el.dataset.header!==undefined){c.headers[+el.dataset.header]=el.value;}else if(el.dataset.row!==undefined){if(!el.checkValidity()||(+el.dataset.col&&el.value==='')){status.textContent='Enter a valid number in every numeric cell.';return;}c.rows[+el.dataset.row][+el.dataset.col]=+el.dataset.col?Number(el.value):el.value;}changed();};
+ $('#chart-table').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.removeRow!==undefined)c.rows.splice(+b.dataset.removeRow,1);else if(b.dataset.removeSeries!==undefined){const i=+b.dataset.removeSeries;c.headers.splice(i,1);c.rows.forEach(r=>r.splice(i,1));}table();changed();};
+ $('#chart-add-row').onclick=()=>{if(c.rows.length<200){c.rows.push(['New category',...c.headers.slice(1).map(()=>0)]);table();changed();}};
+ $('#chart-add-series').onclick=()=>{if(c.headers.length<13){c.headers.push('Series '+c.headers.length);c.rows.forEach(r=>r.push(0));table();changed();}};
+ $('#chart-apply').onclick=()=>{try{const lines=$('#chart-paste').value.trim().split(/\r?\n/).map(l=>l.split('\t')),headers=lines.shift();if(headers.length<2||headers.length>13||headers.some(h=>!h.trim()||h.length>100)||!lines.length||lines.length>200)throw Error('Include 2–13 columns and 1–200 data rows.');const rows=lines.map(r=>{if(r.length!==headers.length||r[0].length>100||r.slice(1).some(v=>!v.trim()||!Number.isFinite(Number(v))||Math.abs(Number(v))>1e12))throw Error('Check row lengths and numeric values.');return[r[0],...r.slice(1).map(Number)];});c.headers=headers;c.rows=rows;table();changed();}catch(e){status.textContent=e.message;}};
+ const download=(url,name)=>{const a=document.createElement('a');a.href=url;a.download=name;a.click();};
+ $('#chart-png').onclick=()=>{if(draw())download(chart.getDataURL({type:'png',pixelRatio:2,backgroundColor:c.background}),'chart.png');};
+ $('#chart-svg').onclick=()=>{if(!draw())return;const svgChart=echarts.init(null,null,{renderer:'svg',ssr:true,width:1000,height:650});try{svgChart.setOption(option(c));const url=URL.createObjectURL(new Blob([svgChart.renderToSVGString()],{type:'image/svg+xml'}));download(url,'chart.svg');setTimeout(()=>URL.revokeObjectURL(url),1000);}finally{svgChart.dispose();}};
+ $('#chart-csv').onclick=()=>{const safe=v=>{let s=String(v);if(typeof v==='string'&&/^[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};const url=URL.createObjectURL(new Blob([[c.headers,...c.rows].map(r=>r.map(safe).join(',')).join('\r\n')],{type:'text/csv'}));download(url,'chart-data.csv');setTimeout(()=>URL.revokeObjectURL(url),1000);};
+ $('#chart-save').onclick=async()=>{if(!form.reportValidity()||[...$('#chart-table').querySelectorAll('input')].some(el=>!el.reportValidity()||!el.value.trim())){status.textContent='Complete all table cells and settings before saving.';return;}if(!draw())return;const btn=$('#chart-save');btn.disabled=true;try{if(!await save(structuredClone(c))){status.textContent='Chart could not be saved. Your edits are still here; try again.';btn.disabled=false;}}catch(e){status.textContent=e.message;btn.disabled=false;}};
+ colors();table();draw();
+ }
+ return {mount,dispose,option,defaults,types};
+})();

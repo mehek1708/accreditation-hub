@@ -1,0 +1,10 @@
+data
+.git
+__pycache__
+tests
+.env
+.venv
+.env.*
+tools
+
+.local-dev-password

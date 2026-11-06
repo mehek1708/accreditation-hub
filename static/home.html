@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head><script src="/auth.js?v=portal-refine-24" defer></script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="/theme.js?v=portal-refine-24"></script><title>Accreditation Hub · Northwest University</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/home.css?v=header-type-25"><link rel="stylesheet" href="/theme.css?v=motion-polish-21"><link rel="stylesheet" href="/eagle-intro.css?v=blur-reveal-6"><script src="/eagle-intro.js?v=portal-refine-24" defer></script><script src="/cycles.js" defer></script><link rel="stylesheet" href="/security.css"></head>
+<body class="home">
+<div class="eagle-intro">
+ <div class="intro-blur" aria-hidden="true"></div>
+ <div class="intro-orb" aria-hidden="true"><canvas width="600" height="600"></canvas></div>
+ <button class="intro-skip" type="button">Skip intro →</button>
+</div>
+<header class="home-header"><a class="university-logo" href="/" aria-label="Northwest University accreditation home"><img src="/nu-logo-reversed.svg" alt="Northwest University" width="216" height="54"></a><div class="header-actions"><span class="home-header-label">ACCREDITATION HUB</span><button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">☾ Dark mode</button></div></header>
+<main class="home-main">
+<section class="welcome"><div class="welcome-art" aria-hidden="true"><div class="art-ring ring-one"></div><div class="art-ring ring-two"></div><div class="art-ring ring-three"></div><div class="art-center"><img class="hero-nu-logo" src="/nu-logo-reversed.svg" alt="" width="160" height="40"></div><span class="art-caption">A FOUNDATION FOR WHAT COMES NEXT</span></div><div class="welcome-copy"><div class="eyebrow">NORTHWEST UNIVERSITY · ACBSP ACCREDITATION</div><h1>Our progress.<br>Our purpose.<br><span>One shared place.</span></h1><p>A home for the work behind accreditation. Bring standards, evidence, and semester reviews together—and keep your team moving forward.</p><a class="home-button" href="#cycles">Explore accreditation cycles <span aria-hidden="true">↓</span></a></div></section>
+<section id="cycles" class="cycles" aria-labelledby="cycles-title"><div class="cycles-heading"><div><div class="eyebrow">YOUR WORKSPACES</div><h2 id="cycles-title">Choose an accreditation cycle</h2><p>Open a cycle to access its standards, documents, and review tasks.</p></div><div class="cycle-actions"><span class="cycle-count" id="cycle-count">Loading cycles…</span><button class="primary" type="button" id="add-cycle" data-admin>＋ Add accreditation cycle</button></div></div>
+<div id="cycle-list" class="cycle-list" aria-live="polite"><p>Loading your accreditation cycles…</p></div>
+<p class="future-note">Each cycle has its own standards, evidence links, and semester reviews.</p></section>
+<section class="home-guide" aria-label="Workspace features"><article><span>01 / ORGANIZE</span><h3>Every requirement, in view.</h3><p>Keep criteria, owners, and progress together in a workspace your team can update.</p></article><article><span>02 / CONNECT</span><h3>Your evidence, connected.</h3><p>Link living documents in Google Drive to the criteria they support.</p></article><article><span>03 / REVIEW</span><h3>Build progress each semester.</h3><p>Use review checklists to capture progress and plan the next steps together.</p></article></section>
+</main><footer class="home-footer"><span>Northwest University</span><span>Accreditation Hub · A shared commitment to continuous improvement.</span></footer>
+<dialog id="cycle-modal" aria-labelledby="cycle-modal-title"><form id="cycle-form">
+<div class="dialog-heading"><h2 id="cycle-modal-title">Add accreditation cycle</h2><button type="button" id="close-cycle" aria-label="Close">✕</button></div>
+<p>Create a separate workspace for your next accreditation. Fields marked * are required.</p>
+<div class="cycle-fields">
+<label class="wide">Cycle name *<input name="name" required maxlength="300" placeholder="e.g. ACBSP 2041"></label>
+<label>Start year *<input name="startYear" type="number" min="2000" max="2199" step="1" required></label>
+<label>End year *<input name="endYear" type="number" min="2001" max="2200" step="1" required></label>
+<label>Cycle coordinator *<input name="coordinator" required maxlength="300" placeholder="Staff member or team"></label>
+<label>Target submission date (optional)<input name="submissionDate" type="date"></label>
+<label class="wide">Description (optional)<textarea name="description" placeholder="Program, scope, or key goals for this cycle"></textarea></label>
+<label class="wide">Standards and criteria template *<select name="template" id="cycle-template"><option value="starter">Standard starter framework (7 standards, 30 criteria)</option><option value="blank">Build your own framework (start empty)</option></select></label>
+<p class="wide cycle-template-note">Choose “Build your own framework” to start with no standards or criteria and add your own in the workspace. Other templates provide a starting framework; owners, links, notes, progress, and review tasks start empty.</p>
+</div><p id="cycle-error" role="alert"></p>
+<div class="dialog-actions"><button type="button" id="cancel-cycle" class="secondary">Cancel</button><button type="submit" id="create-cycle" class="primary">Create cycle</button></div>
+</form></dialog></body></html>

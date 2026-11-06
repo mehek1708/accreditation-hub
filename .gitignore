@@ -1,0 +1,24 @@
+data/*.sqlite3*
+__pycache__/
+*.pyc
+.env
+
+data/swift-cache/
+data/media-preview/
+.venv/
+.env.*
+!.env.example
+
+.local-dev-password
+
+# All runtime data, evidence, backups, and preview artifacts stay private.
+data/
+*.log
+.DS_Store
+
+# Unused reference-video derivatives are not distributed.
+static/eagle-flight.mp4
+static/eagle-poster.jpg
+static/eagle-frames/
+static/eagle-sprite.png
+static/eagle-cutout.png

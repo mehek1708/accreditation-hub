@@ -1,0 +1,89 @@
+:root{
+  color-scheme:light;
+  --surface:#fff;--accent:#215cda;--accent-hover:#1848ad;--teal:#007d89;--gold:#ad6200;
+  --navy:#102f57;--page:#f4f7fd;--muted:#53677f;--blue-tint:#eaf0ff;
+  --hero-a:#f3f7ff;--hero-b:#e0efff;--hero-c:#fff1d9;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --surface:#15243a;--page:#0b1424;--navy:#e2edff;--navy-hover:#bcd4ff;
+  --muted:#a9bad0;--border:#33475f;--blue-tint:#203653;--row-border:#293b51;
+  --table-bg:#122037;--blue-text:#a8caff;--review-tint:#2b3b58;--overlay:#030a16b3;
+  --accent:#3978ed;--accent-hover:#2462d4;--teal:#5be0d3;--gold:#ffc573;
+  --hero-a:#101f38;--hero-b:#172d50;--hero-c:#352b35;
+}
+body,.home{background:var(--page);color:var(--navy)}
+aside,.metric,.standard,.review,.summary,.empty,.secondary,dialog,input,select,textarea{background:var(--surface)}
+.primary,.nav.active,.badge.complete,#toast{background:var(--accent);color:white}
+.primary:hover{background:var(--accent-hover)}
+.university-brand,.home-header{background:#002d56}
+.header-actions{display:flex;align-items:center;gap:20px}
+.theme-toggle{border:1px solid var(--border);background:var(--surface);color:var(--navy);padding:10px 14px;font-size:12px;letter-spacing:0;white-space:nowrap;min-height:40px;box-shadow:0 2px 8px #001e3b08}
+.theme-toggle:hover{background:var(--blue-tint)}
+.home-header .theme-toggle{background:#ffffff12;border-color:#ffffff50;color:white}
+.home-header .theme-toggle:hover{background:#ffffff24}
+.metric{border-top:3px solid var(--accent)}
+.metric:nth-child(2){border-top-color:var(--teal)}
+.metric:nth-child(3){border-top-color:var(--gold)}
+.metric:nth-child(4){border-top-color:#8773db}
+.metric strong{color:var(--navy)}
+.live-dot{background:var(--teal)}
+.checklist input,.mini-progress progress{accent-color:var(--accent)}
+progress::-webkit-progress-value{background:var(--accent)}
+progress::-moz-progress-bar{background:var(--accent)}
+[data-theme="dark"] .danger,[data-theme="dark"] #form-error{color:#ffaca5}
+::selection{background:var(--accent);color:white}
+@media(max-width:700px){.header-actions{gap:8px}header{gap:10px;height:auto;min-height:70px;flex-wrap:wrap;padding:12px 0}.header-actions #save-state{font-size:10px}.theme-toggle{padding:9px 11px}.home-header-label{display:none}}
+@media print{:root[data-theme]{color-scheme:light;--navy:#102f57;--surface:#fff;--page:#fff;--muted:#53677f;--border:#d8e1ec;--table-bg:#fff;--row-border:#d8e1ec;--blue-tint:#eaf0ff}body,.home{background:white}.theme-toggle{display:none!important}}
+
+/* Shared university typography across the landing page and workspace. */
+:root{font-family:"Times New Roman",Times,serif}
+button,input,select,textarea{font-family:inherit}
+.art-center,.art-center span{font-family:"Times New Roman",Times,serif}
+/* Retain toolbar clearance, reduced by 24px to remove the excess gap. */
+:root{--portal-top-clearance:40px}
+body.home,body.workspace-page{padding-top:var(--portal-top-clearance)}
+body.home .home-header{top:var(--portal-top-clearance)}
+body.workspace-page aside{top:var(--portal-top-clearance);height:calc(100dvh - var(--portal-top-clearance));bottom:0}
+@media(max-width:900px){body.workspace-page aside{top:auto;height:auto;bottom:auto}}
+@media print{body.home,body.workspace-page{padding-top:0}body.home .home-header{top:auto}}
+
+/* Shared interaction polish: restrained movement and clear focus states. */
+:root{--motion-duration:200ms;--motion-ease:cubic-bezier(.2,.7,.3,1);--card-halo:0 8px 28px #3478dc18,0 0 0 1px #3478dc26}
+button,a,input,select,textarea{transition:background-color var(--motion-duration) ease,border-color var(--motion-duration) ease,color var(--motion-duration) ease,box-shadow var(--motion-duration) ease}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.metric,.standard,.review,.summary,.cycle-card,.home-guide article,.evidence-card,.admin-record{transition:transform var(--motion-duration) var(--motion-ease),box-shadow var(--motion-duration) ease,border-color var(--motion-duration) ease}
+.metric strong,.standard-title h3,.review h3,.overview-card-title,.cycle-card h3,.home-guide h3,.evidence-card h2,.admin-record h2{transform-origin:left center;transition:transform var(--motion-duration) var(--motion-ease)}
+@media(hover:hover) and (pointer:fine){
+ .metric:hover,.standard:hover,.review:hover,.summary:hover,.cycle-card:hover,.home-guide article:hover,.evidence-card:hover,.admin-record:hover{transform:translateY(-3px);box-shadow:var(--card-halo);border-color:var(--accent)}
+ .metric:hover strong,.standard:hover .standard-title h3,.review:hover h3,.overview-preview:hover .overview-card-title,.cycle-card:hover h3,.home-guide article:hover h3,.evidence-card:hover h2,.admin-record:hover h2{transform:scale(1.015)}
+ /* Keep forms stationary while someone is editing. */
+ .standard:focus-within,.review:focus-within,.summary:focus-within,.evidence-card:focus-within{transform:none}
+}
+.motion-toggle{border:1px solid var(--border);padding:9px 12px;font-size:12px;white-space:nowrap}
+.home-header .motion-toggle{color:white;border-color:#ffffff50;background:#ffffff12}
+.workspace-page .page-heading{padding-block:30px 24px}
+.workspace-page h1{font-size:clamp(28px,2.7vw,36px);line-height:1.2}
+.workspace-page .toolbar{gap:16px}
+.workspace-page .standard-heading{padding-block:23px}
+.workspace-page td{line-height:1.55}
+.workspace-page .notice{background:transparent;border-left:2px solid var(--border);border-radius:0;padding:10px 16px}
+.workspace-page .account-bar,.home .account-bar{font-size:12px;color:var(--muted)}
+.workspace-page .overview-preview{border-top:2px solid var(--accent)}
+.workspace-page .summary p{max-width:85ch}
+html[data-motion=on] dialog[open]{animation:portal-dialog-in 180ms var(--motion-ease)}
+html[data-motion=on] .workspace-page #content{animation:portal-content-in 220ms var(--motion-ease)}
+@keyframes portal-dialog-in{from{opacity:.6;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes portal-content-in{from{opacity:.7;transform:translateY(5px)}to{opacity:1;transform:none}}
+html[data-motion=off]{scroll-behavior:auto!important}
+html[data-motion=off] *,html[data-motion=off] *::before,html[data-motion=off] *::after{animation:none!important;transition:none!important}
+html[data-motion=off] .home-main>section,html[data-motion=off] .metric,html[data-motion=off] .standard,html[data-motion=off] .review,html[data-motion=off] .summary,html[data-motion=off] .cycle-card,html[data-motion=off] .home-guide article,html[data-motion=off] .evidence-card,html[data-motion=off] .admin-record{transform:none!important;opacity:1!important}
+html[data-motion=off] .eagle-intro{display:none!important}
+@media(prefers-reduced-motion:reduce){
+ *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+ .home-main>section,.metric,.standard,.review,.summary,.cycle-card,.home-guide article,.evidence-card,.admin-record{transform:none!important;opacity:1!important}
+ .eagle-intro{display:none!important}
+}
+@media print{.motion-toggle{display:none!important}*,*::before,*::after{animation:none!important;transition:none!important;transform:none!important}}
+html[data-motion=off] .metric strong,html[data-motion=off] .standard-title h3,html[data-motion=off] .review h3,html[data-motion=off] .overview-card-title,html[data-motion=off] .cycle-card h3,html[data-motion=off] .home-guide h3{transform:none!important}
+@media(prefers-reduced-motion:reduce){.metric strong,.standard-title h3,.review h3,.overview-card-title,.cycle-card h3,.home-guide h3,.evidence-card h2,.admin-record h2{transform:none!important}}
