@@ -22,3 +22,8 @@ static/eagle-poster.jpg
 static/eagle-frames/
 static/eagle-sprite.png
 static/eagle-cutout.png
+
+# Local documentation build inputs and preview outputs.
+tmp/
+output/
+docs/manual-assets/

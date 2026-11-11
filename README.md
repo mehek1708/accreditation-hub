@@ -4,6 +4,10 @@ A shared Northwest University workspace for accreditation cycles, editable stand
 
 > **Prototype — not approved for production use.** University authentication configuration, approved hosting, upload scanning, backup operations, and security/browser review are required before using private university records. This repository contains no runtime database or credentials.
 
+## User manual
+
+[Read or download the illustrated user manual (PDF)](docs/user-manual.pdf). Includes numbered screenshots for cycles, criteria, evidence, reviews, charts, and administration.
+
 ## Continue developing locally
 
 Run `.venv/bin/python -B run_local.py`, open http://127.0.0.1:8000/login, and enter the password from `.local-dev-password` in this folder. This explicit localhost-only mode gives you development admin access to your saved workspace while university IT setup is pending. Production startup still requires Microsoft sign-in.
@@ -36,7 +40,7 @@ Only approved accounts in the configured university tenant, with an exact `@nort
 
 1. Click **Edit project** to change the project title and introduction.
 2. Review the starter standard headings and replace each placeholder criterion with your institution's approved criterion. Use **Edit standard**, **Add standard**, and **Add criterion**. Criteria accept a short code and title plus detailed requirements in notes. No code changes are needed.
-3. Use the inline owner, status, and evidence dropdowns to update a criterion immediately. Choose **＋ Add owner…** to add a name to the shared owner list. Click any criterion to edit its other details and paste an HTTPS `docs.google.com` or `drive.google.com` link. Documents stay in Google Drive: staff must manage their permissions there. The tracker does not check Drive access or sync document contents.
+3. Use the inline owner, status, and evidence dropdowns to update a criterion immediately. Administrators manage the shared owner list in **People & access**. Click any criterion to edit its other details and paste an HTTPS `docs.google.com` or `drive.google.com` link. Documents stay in Google Drive: staff must manage their permissions there. The tracker does not check Drive access or sync document contents.
 4. Filter by status, or search for a title, owner, code, or note. The Standards & Criteria page and its editor do not display reporting years. Existing year values are retained in storage and exports; semester reviews still have year selectors. New criteria use the selected cycle’s start year internally.
 5. In **Semester reviews**, choose Spring/Fall and a year, then **Create semester tasks**. This creates one task per standard for that period without duplicates. Assign owners, due dates, and notes with **Edit task**. Check criteria as they are reviewed. A task is complete only when it has criteria and all are checked. Added criteria automatically join existing checklists; deleting criteria removes their checklist entries. Review checks are independent of criterion workflow status. Tasks are generated on demand for Spring/Fall in each year of the selected cycle.
 6. Use **Submission overview** to identify missing owners, links, and incomplete work. **Print / Save PDF** produces a team summary, including document URLs and notes. **Export criteria CSV** downloads the full criteria register regardless of active filters. CSV is an export, not an import format.
@@ -83,7 +87,7 @@ The name, description, coordinator, and submission date remain editable through 
 
 The original project migrates automatically into the `cycles` table on first startup after this update. Its standards, criteria, links, notes, and reviews are preserved; the old `project` row is retained as a legacy snapshot. `/api/project` remains an alias for the original 2021–2031 cycle; new clients use `/api/cycles/{start}-{end}/project`. Existing stale-save protection operates independently per cycle. Only admins can create or archive cycles; signed-in staff can update existing work.
 
-CSV and JSON exports apply to the open cycle and use its years in the filename. JSON backups identify their cycle and cannot be restored over a different year range. To back up **all cycles**, back up the entire SQLite database. Use the cycle card’s Delete button to move a complete cycle to Archives.
+CSV and JSON exports apply to the open cycle and use its years in the filename. JSON backups identify their cycle and cannot be restored over a different year range. To back up **all cycles**, back up the entire SQLite database. Use the trash icon at the bottom of the cycle workspace to move a complete cycle to Archives.
 
 ## Evidence library
 
@@ -99,9 +103,9 @@ Back up the **entire SQLite database** to preserve uploads, versions, archives, 
 
 ## Custom workspace tasks
 
-Admins can click **＋** beside Workspace to add a named section and choose Text, Document, Media, Pictures, Charts, or a custom category. Categories organize the work; they do not enable a separate media editor or chart-building tool. Each section saves draft text/notes and a portal evidence or HTTPS resource link. Use the Evidence library to upload supported documents, then paste its copied link into the section. Media may be linked from an HTTPS source. Staff can edit existing section content.
+Admins can click **＋** beside Workspace to add a named section and choose Text, Document, Media, Pictures, Charts, or a custom category. Categories organize the work; Charts opens the chart builder described below. Each section saves draft text/notes and a portal evidence or HTTPS resource link. Use the Evidence library to upload supported documents, then paste its copied link into the section. Media may be linked from an HTTPS source. Staff can edit existing section content.
 
-Right-click a custom sidebar section (or select its **⋯** button) to edit its name/category or delete it. Shift+F10 opens the same menu from the keyboard. Only admins can add/delete or change names/categories. Deletion moves the section and all its text/link data into Archives. Restoration checks for ID/name conflicts; underlying documents remain untouched. Custom tasks belong to one cycle and are included in that cycle’s JSON backup, but framework templates do not copy them into new cycles.
+Right-click a custom sidebar section to edit its name/category or delete it. Shift+F10 opens the same menu from the keyboard. Only admins can add/delete or change names/categories. Deletion moves the section and all its text/link data into Archives. Restoration checks for ID/name conflicts; underlying documents remain untouched. Custom tasks belong to one cycle and are included in that cycle’s JSON backup, but framework templates do not copy them into new cycles.
 
 ### Chart workspaces
 Use **+** beside Workspace, enter a name, and select **Charts**. The chart builder provides 22 chart types, an editable data table, spreadsheet paste, titles, axis titles, colors, font choices, legends, grid lines, and data labels. Special chart types explain their data format below the preview. Sample data is not saved until you choose **Save chart**. Save before navigating away. PNG/SVG and data CSV downloads are available. This is a 2D chart builder, not a complete Microsoft Word chart implementation (3D surfaces and geographic maps are not included).
@@ -109,3 +113,7 @@ Use **+** beside Workspace, enter a name, and select **Charts**. The chart build
 Charts are saved with the task in shared storage and included in backups and archive restoration. Chart rendering uses locally bundled Apache ECharts 5.6.0; no chart data goes to an external chart service. Its license is in `static/ECHARTS-LICENSE.txt`.
 
 Administrators can right-click a sidebar section (or focus it and press Shift+F10) to open its menu. Removing a built-in section hides it from the sidebar and archives the section entry; its underlying records and uploaded files remain saved. Restore the section from **Archives**. Custom task deletion archives its complete contents, including its chart.
+
+## Friendly recovery screens
+
+An eagle helps explain missing pages, connection failures, and server errors. Retry or return home from the recovery screen; interrupted forms remain available rather than being automatically resubmitted. Offline navigation uses a generic fallback after the portal has loaded successfully once, on HTTPS or localhost. Only generic recovery assets are cached, not account details, records, or uploaded documents. Offline editing is not supported.

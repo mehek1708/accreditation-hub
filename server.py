@@ -164,7 +164,7 @@ class Handler(BaseHTTPRequestHandler):
         return False
 
     def public_get(self, path):
-        public={'/login':('login.html','text/html'),'/auth.js':('auth.js','text/javascript'),'/security.css':('security.css','text/css'),'/style.css':('style.css','text/css'),'/theme.css':('theme.css','text/css'),'/theme.js':('theme.js','text/javascript'),'/nu-logo-reversed.svg':('nu-logo-reversed.svg','image/svg+xml')}
+        public={'/error.css':('error.css','text/css'),'/error.js':('error.js','text/javascript'),'/sw.js':('sw.js','text/javascript'),'/offline.html':('offline.html','text/html'),'/login':('login.html','text/html'),'/auth.js':('auth.js','text/javascript'),'/security.css':('security.css','text/css'),'/style.css':('style.css','text/css'),'/theme.css':('theme.css','text/css'),'/theme.js':('theme.js','text/javascript'),'/nu-logo-reversed.svg':('nu-logo-reversed.svg','image/svg+xml')}
         if path in public:
             file,mime=public[path];self.respond(200,(ROOT/'static'/file).read_bytes(),mime+'; charset=utf-8');return True
         if path=='/api/auth/status':
@@ -341,10 +341,12 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith('/cycles/'):
             identifier = path.removeprefix('/cycles/').rstrip('/')
             with connect() as db: exists = db.execute('SELECT 1 FROM cycles WHERE id=?', (identifier,)).fetchone()
-            if not exists: return self.respond(404, {'error':'Cycle not found'})
+            if not exists: return self.respond(404, (ROOT/'static'/'error.html').read_bytes(), 'text/html; charset=utf-8')
             return self.respond(200, (ROOT/'static'/'index.html').read_bytes(), 'text/html; charset=utf-8')
         files = {'/charts.js':('charts.js','text/javascript; charset=utf-8'), '/echarts.min.js':('echarts.min.js','text/javascript; charset=utf-8'), '/evidence.js':('evidence.js','text/javascript; charset=utf-8'), '/workspace.css':('workspace.css','text/css; charset=utf-8'), '/admin.js':('admin.js','text/javascript'), '/cycles.js':('cycles.js','text/javascript; charset=utf-8'), '/eagle-perched.png':('eagle-perched.png','image/png'), '/eagle-original-flight.png':('eagle-original-flight.png','image/png'), '/eagle-sprite.png':('eagle-sprite.png','image/png'), '/eagle-cutout.png':('eagle-cutout.png','image/png'), '/eagle-poster.jpg':('eagle-poster.jpg','image/jpeg'), '/eagle-intro.js':('eagle-intro.js','text/javascript; charset=utf-8'), '/eagle-intro.css':('eagle-intro.css','text/css; charset=utf-8'), '/theme.js':('theme.js','text/javascript; charset=utf-8'), '/theme.css':('theme.css','text/css; charset=utf-8'), '/':('home.html','text/html; charset=utf-8'), '/cycles/2021-2031':('index.html','text/html; charset=utf-8'), '/home.css':('home.css','text/css; charset=utf-8'), '/nu-logo-reversed.svg':('nu-logo-reversed.svg','image/svg+xml'), '/app.js':('app.js','text/javascript; charset=utf-8'), '/style.css':('style.css','text/css; charset=utf-8')}
-        if path not in files: return self.respond(404, {'error':'Not found'})
+        if path not in files:
+            if path.startswith('/api/') or 'text/html' not in self.headers.get('Accept',''): return self.respond(404, {'error':'Not found'})
+            return self.respond(404, (ROOT/'static'/'error.html').read_bytes(), 'text/html; charset=utf-8')
         name, mime = files[path]
         self.respond(200,(ROOT/'static'/name).read_bytes(),mime)
 

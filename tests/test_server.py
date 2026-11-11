@@ -40,6 +40,16 @@ class TrackerTests(unittest.TestCase):
         r = conn.getresponse(); result = (r.status, r.read()); conn.close()
         return result
 
+    def test_recovery_pages_keep_api_errors_json(self):
+        status, body = self.request('GET', '/missing-page', headers={'Accept':'text/html'})
+        self.assertEqual(status, 404)
+        self.assertIn(b'data-error-page="missing"', body)
+        status, body = self.request('GET', '/api/missing', headers={'Accept':'text/html'})
+        self.assertEqual(status, 404)
+        self.assertEqual(json.loads(body)['error'], 'Not found')
+        for path in ['/offline.html', '/error.js', '/error.css', '/sw.js']:
+            self.assertEqual(self.request('GET', path, auth=False)[0], 200)
+
     def test_persistence_and_conflict(self):
         status, body = self.request('GET'); self.assertEqual(status, 200)
         data = json.loads(body); data['project']['name'] = 'Team Project'
